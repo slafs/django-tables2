@@ -1,26 +1,45 @@
-from django.shortcuts import render_to_response
-from django.template import RequestContext
+# coding: utf-8
+from django.shortcuts import render
+from django_tables2   import RequestConfig, SingleTableView
 from .tables import CountryTable, ThemedCountryTable
-from .models import Country
+from .models import Country, Person
 
 
-def home(request):
-    order_by = request.GET.get('sort')
-    queryset = Country.objects.all()
-    #
-    example1 = CountryTable(queryset, order_by=order_by)
-    #
-    example2 = CountryTable(queryset, order_by=order_by)
-    example2.paginate(page=request.GET.get('page', 1), per_page=3)
-    #
-    example3 = ThemedCountryTable(queryset, order_by=order_by)
-    #
-    example4 = ThemedCountryTable(queryset, order_by=order_by)
-    example4.paginate(page=request.GET.get('page', 1), per_page=3)
+def multiple(request):
+    qs = Country.objects.all()
 
-    return render_to_response('example.html', {
+    example1 = CountryTable(qs, prefix="1-")
+    RequestConfig(request, paginate=False).configure(example1)
+
+    example2 = CountryTable(qs, prefix="2-")
+    RequestConfig(request, paginate={"per_page": 2}).configure(example2)
+
+    example3 = ThemedCountryTable(qs, prefix="3-")
+    RequestConfig(request, paginate={"per_page": 3}).configure(example3)
+
+    example4 = ThemedCountryTable(qs, prefix="4-")
+    RequestConfig(request, paginate={"per_page": 3}).configure(example4)
+
+    example5 = ThemedCountryTable(qs, prefix="5-")
+    example5.template = "extended_table.html"
+    RequestConfig(request, paginate={"per_page": 3}).configure(example5)
+
+    return render(request, 'multiple.html', {
         'example1': example1,
         'example2': example2,
         'example3': example3,
         'example4': example4,
-    }, context_instance=RequestContext(request))
+        'example5': example5,
+    })
+
+
+class ClassBased(SingleTableView):
+    table_class = ThemedCountryTable
+    queryset = Country.objects.all()
+    template_name = "class_based.html"
+
+class_based = ClassBased.as_view()
+
+
+def tutorial(request):
+    return render(request, "tutorial.html", {"people": Person.objects.all()})
